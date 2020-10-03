@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -13,27 +14,79 @@ class PageKamusBugis extends StatefulWidget {
 
 class _PageKamusBugisState extends State<PageKamusBugis> {
   bool isLoading = true;
+  bool isSearch = false;
   List<KamusResponseData> listKata;
+  List<KamusResponseData> filterList;
+
+  var etSearce = new TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    etSearce.addListener(() {
+      if (etSearce.text.isEmpty) {
+        setState(() {
+          isSearch = false;
+        });
+      } else {
+        setState(() {
+          isSearch = true;
+        });
+      }
+    });
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Kamus Bahasa Indonesia - Bugis"),
-      ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: listKata.length,
-              itemBuilder: (BuildContext context, int index) {
-                var kata = listKata[index];
-                return ListTile(
-                  title: Text(kata.indonesia),
-                  subtitle: Text(kata.bugis),
-                );
-              },
-            ),
+        appBar: AppBar(
+          title: Text("Kamus Bahasa Indonesia - Bugis"),
+        ),
+        body: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  _SearchView(),
+                  !isSearch
+                      ? _createListView(listKata)
+                      : _createListView(_performSearch()),
+                ],
+              ));
+  }
+
+  Widget _createListView(List<KamusResponseData> listKata) {
+    log('_createListView: called $listKata');
+
+    return Flexible(
+      child: ListView.builder(
+          itemCount: listKata.length,
+          itemBuilder: (BuildContext context, int index) {
+            var kata = listKata[index];
+            return ListTile(
+              title: Text(kata.indonesia),
+              subtitle: Text(kata.bugis),
+            );
+          }),
     );
+  }
+
+  Widget _SearchView() {
+    return Container(
+      decoration: BoxDecoration(border: Border.all(width: 1.0)),
+      child: TextField(
+        controller: etSearce,
+        decoration: InputDecoration(
+          hintText: "Cari Kata",
+        ),
+      ),
+    );
+  }
+
+  List<KamusResponseData> _performSearch() {
+    filterList = new List<KamusResponseData>();
+    for (int i = 0; i < listKata.length; i++) {
+      var item = listKata[i];
+      if (item.indonesia.toLowerCase().contains(etSearce.text)) {
+        filterList.add(item);
+      }
+    }
+    return filterList;
   }
 
   @override
